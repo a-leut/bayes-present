@@ -1,0 +1,103 @@
+---
+title: "trump_explore"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Explore Points
+
+#### Clean and save cleaned data
+
+```{r Clean and save data}
+# Configure for enviroment
+PROJECT_HOME = "C:/dev/trump_bayes/explore"
+CLEAN_DATA = TRUE
+
+if(CLEAN_DATA) {
+  # Data clean functions 
+  agree_to_num=function(agree) {
+    switch(as.character(agree),
+           "Strongly Disagree" = as.numeric(0),
+           "Disagree" = as.numeric(1/3),
+           "Agree" = as.numeric(2/3),
+           "Strongly Agree" = as.numeric(1))
+  }
+  sex_to_num=function(sex) {
+    switch(as.character(sex),
+           "Male" = as.numeric(0),
+           "Female" = as.numeric(1))
+  }
+  # Simplification - assumption of average age
+  age_to_num=function(age) {
+    switch(as.character(age),
+           "17 or younger" = as.numeric(15),
+           "18-20" = as.numeric(19),
+           "21-29" = as.numeric(25),
+           "30-39" = as.numeric(35),
+           "40-49" = as.numeric(45),
+           "50-59" = as.numeric(55),
+           "60 or older" = as.numeric(65))
+  }
+  
+  # resp 37 Cultural Marxism does not exist
+  # resp 86 no data
+  
+  # Load data
+  setwd(PROJECT_HOME)
+  base_df=read.csv("poll_data.csv")
+  
+  # Clean data
+  base_df$Sharia=sapply(base_df$Sharia, agree_to_num, simplify = TRUE)
+  base_df$Marx=sapply(base_df$Marx, agree_to_num)
+  base_df$SS=sapply(base_df$SS, agree_to_num)
+  base_df$Medi=sapply(base_df$Medi, agree_to_num)
+  base_df$ChinaWar=sapply(base_df$ChinaWar, agree_to_num)
+  base_df$ChinaMoney=sapply(base_df$ChinaMoney, agree_to_num)
+  base_df$Trad=sapply(base_df$Trad, agree_to_num)
+  base_df$Support=sapply(base_df$Support, agree_to_num)
+  base_df$Sex=sapply(base_df$Sex, sex_to_num)
+  base_df$Age=sapply(base_df$Age, age_to_num)
+  
+  # Save data
+  write.csv(base_df, file="clean_data.csv", row.names=FALSE)
+}
+```
+
+#### Load data
+
+```{r Load cleaned data}
+# Attach data
+df=read.csv("clean_data.csv")
+attach(df)
+```
+
+#### Scatterplot comparison of reponses
+
+```{r Multi scatter}
+library(car)
+
+j=function(s) {
+  return(jitter(s, factor = 1))
+}
+
+pairs(~j(Sharia)+j(Marx)+j(SS)+j(Medi)+j(ChinaWar)+j(ChinaMoney)+j(Trad), data=df)
+
+```
+
+#### In terms of Support
+
+
+```{r Multi scatter support}
+scatterplotMatrix(~j(Sharia)+j(Marx)+j(SS)+j(Medi)+j(ChinaWar)+j(ChinaMoney)+j(Trad)|Support, data=df)
+```
+
+#### Correlation Visualization
+
+```{r Correlation matrix}
+library(corrplot)
+M <- cor(df)
+corrplot(M, method="circle")
+```
