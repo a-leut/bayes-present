@@ -177,5 +177,12 @@ scatterplot(j(Marx) ~  j(SS)| c_df$t0, data=df,
 
 
 ```{r Multi scatter support}
-scatterplotMatrix(~j(Sharia)+j(Marx)+j(SS)+j(Medi)+j(ChinaWar)+j(ChinaMoney)+j(Trad)+j(Support)|c_df$t0, data=df)
+scatterplotMatrix(~j(Sharia)+j(Marx)+j(SS)+j(Medi)|c_df$t0, data=df,
+reg.line=F, spread=FALSE, lwd=0, smoother=NULL)
+```
+
+
+```{r Multi scatter support}
+scatterplotMatrix(~j(ChinaWar)+j(ChinaMoney)+j(Trad)+j(Support)|c_df$t0, data=df,
+                  reg.line=F, spread=FALSE, lwd=0, smoother=NULL)
 ```
