@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r Clean and save data}
 # Configure for enviroment
-PROJECT_HOME = "C:/dev/trump_bayes/explore"
 CLEAN_DATA = TRUE
 
 if(CLEAN_DATA) {
@@ -46,8 +45,7 @@ if(CLEAN_DATA) {
   # resp 86 no data
   
   # Load data
-  setwd(PROJECT_HOME)
-  base_df=read.csv("poll_data.csv")
+  base_df=read.csv("C:\\dev\\bayes-present\\explore\\poll_data.csv")
   
   # Clean data
   base_df$Sharia=sapply(base_df$Sharia, agree_to_num, simplify = TRUE)
@@ -70,8 +68,51 @@ if(CLEAN_DATA) {
 
 ```{r Load cleaned data}
 # Attach data
-df=read.csv("clean_data.csv")
+
+df=read.csv("C:\\dev\\bayes-present\\explore\\clean_data.csv")
 attach(df)
+```
+
+#### Frequency of responses
+
+```{r Freq of responses1}
+hist(Sharia)
+```
+
+```{r Freq of responses2}
+hist(Marx)
+```
+
+```{r Freq of responses3}
+hist(SS)
+```
+
+```{r Freq of responses4}
+hist(Medi)
+```
+
+```{r Freq of responses5}
+hist(ChinaWar)
+```
+
+```{r Freq of responses6}
+hist(ChinaMoney)
+```
+
+```{r Freq of responses7}
+hist(Trad)
+```
+
+```{r Freq of responses8}
+hist(Support)
+```
+
+```{r Freq of responses9}
+hist(Sex)
+```
+
+```{r Freq of responses10}
+hist(Age)
 ```
 
 #### Scatterplot comparison of reponses
@@ -100,4 +141,41 @@ scatterplotMatrix(~j(Sharia)+j(Marx)+j(SS)+j(Medi)+j(ChinaWar)+j(ChinaMoney)+j(T
 library(corrplot)
 M <- cor(df)
 corrplot(M, method="circle")
+```
+
+
+#### Load clustering results from classify_people.py
+
+```{r Load clustering}
+c_df=read.csv("C:\\dev\\bayes-present\\explore\\cluster_data_25.csv")
+```
+
+```{r Support vs groups}
+scatterplot(j(Support) ~  j(Marx)| c_df$t0, data=df,
+main="Support vs Cultural Marx.")
+```
+
+```{r Support vs sex}
+scatterplot(j(Support) ~  j(Sex)| c_df$t0, data=df,
+            main="Support vs Gender")
+```
+
+
+```{r Med vs ss}
+scatterplot(j(Medi) ~  j(SS)| c_df$t0, data=df,
+            main="Medicare vs Social Security")
+```
+
+
+```{r Med vs ss}
+scatterplot(j(Marx) ~  j(SS)| c_df$t0, data=df,
+            main="Cultural Marx. vs Social Security")
+```
+
+
+#### In terms of group
+
+
+```{r Multi scatter support}
+scatterplotMatrix(~j(Sharia)+j(Marx)+j(SS)+j(Medi)+j(ChinaWar)+j(ChinaMoney)+j(Trad)+j(Support)|c_df$t0, data=df)
 ```
