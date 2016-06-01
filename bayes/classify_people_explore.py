@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn import mixture
 
-COMPONENTS = 25
+COMPONENTS = 2
 SAMPLES = 10
 
 def get_clusters(array):
@@ -16,9 +16,11 @@ def main():
         x = np.loadtxt(f, delimiter=',', skiprows=1)
     res = pd.DataFrame()
     for i in tqdm(range(SAMPLES)):
-        clusters = get_clusters(x).astype('int')
-        res['t%d' % i] = clusters
-    res.to_csv('cluster_data_%s.csv' % COMPONENTS, index=False)
+        clus_assign = get_clusters(x).astype('int')
+        groups = np.unique(clus_assign, return_counts=True)
+        print(groups)
+        res['t%d' % i] = clus_assign
+    res.to_csv('cluster_data_%s_comps_%s_trials.csv' % (COMPONENTS, SAMPLES), index=False)
 
 if __name__ == '__main__':
     main()
