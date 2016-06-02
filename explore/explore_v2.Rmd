@@ -73,6 +73,39 @@ df=read.csv("C:\\dev\\bayes-present\\explore\\clean_data.csv")
 attach(df)
 ```
 
+
+```{r output table of results, echo=FALSE, warning=FALSE}
+library(plyr)
+
+print_col=function(col) {
+  freq=count(col)
+  print(paste("Strongly Disagree (0):", freq$freq[1]))
+  print(paste("Disagree (1/3):", freq$freq[2]))
+  print(paste("Agree (2/3):", freq$freq[3]))
+  print(paste("Strongly Agree (1):", freq$freq[4]))
+}
+print("Marx")
+print_col(df$Marx)
+print("Sharia")
+print_col(df$Sharia)
+print("SS")
+print_col(df$SS)
+print("Medi")
+print_col(df$Medi)
+print("ChinaWar")
+print_col(df$ChinaWar)
+print("Trad")
+print_col(df$Trad)
+print("Support")
+print_col(df$Support)
+print("Sex")
+print_col(df$Sex)
+print("Age")
+print_col(df$Age)
+
+```
+
+
 #### Frequency of responses
 
 ```{r Freq of responses1}
@@ -305,14 +338,14 @@ random_entropy_draws=function(obs) {
       trial[it] = ent
     }
   }
-  print(paste(ITERATIONS, "trials"))
-  print(paste("Average trial size:", mean(sizes)))
+  #print(paste(ITERATIONS, "trials"))
+  #print(paste("Average trial size:", mean(sizes)))
   return(trial)
 }
 
-mc_draws=random_entropy_draws(df)
-em_1_draws=random_entropy_draws(df[round(c_2_avg)==1,])
-em_2_draws=random_entropy_draws(df[round(c_2_avg)==2,])
+#mc_draws=random_entropy_draws(df)
+#em_1_draws=random_entropy_draws(df[round(c_2_avg)==1,])
+#em_2_draws=random_entropy_draws(df[round(c_2_avg)==2,])
 bay_1_draws=random_entropy_draws(df[round(av1)==1,])
 bay_2_draws=random_entropy_draws(df[round(av1)==2,])
 
@@ -320,9 +353,9 @@ bay_2_draws=random_entropy_draws(df[round(av1)==2,])
 
 ```{r compare our fits}
 report=function(draws, df) {
-  summary(draws)
-  print("95% Conf:")
-  print(quantile(draws, c(.025, .975)))
+  print(summary(draws))
+  print("99% Conf:")
+  print(quantile(draws, c(.005, .995)))
   print(paste("Sample DE:", dif_entropy(df)))
 }
 

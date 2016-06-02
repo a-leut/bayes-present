@@ -1,0 +1,257 @@
+---
+title: "Classification of Trump Supporters with Dirichlet Mixture Models"
+output: 
+  pdf_document:
+    md_extensions: +startnum
+author: "Alex Leutenegger"
+date: "6/1/2016"
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background and Motivation
+
+The purpose of this paper is to learn more about Donald Trump supporters. First, this is important because Trump may win the general election and become President of the United States. Second, even if he does not win, his supporters (and his message) will live on.
+
+
+My hypothesis is that Trump represents a new movement in the recent history of American politics. Trump and his supporters have very different beliefs from those of their "fellow" Republicans. Trump has taken the Republican ticket, but I believe that many of his supporters should not be classified as Republican.
+
+
+I chose to research Trump for another class last quarter. For the class, I collected survey data from the unofficial Trump subreddit. I did not conduct any quantitative analysis at that time. I will now do so in this paper.
+
+## Survey Methodology
+
+
+SurveyMonkey poll of 10 questions. Posted 2/2/2016. 8 questions with responses "Strongly Agree", "Agree", "Disagree", and "Strongly Disagree." One question for age and another for gender.
+
+
+Questions (Codes):
+
+
+1. Cultural Marxism exists and it is a threat to the United States (Marx)
+2. Sharia Law is a threat to the United States (Sharia)
+3. Social security should be improved (SS)
+4. Medicare coverage should be expanded (Medi)
+5. China is threat to national security (ChinaWar)
+6. China is "winning" on trade (ChinaMoney)
+7. Traditional culture is under attack (Trad)
+8. I support Donald Trump more than any other candidate (Support)
+
+Gender question coded "Sex." Age question coded "Age," with responses "17 or younger", "18-20", "21-29", "30-39", "40-49", "50-59", and "60 or older."
+
+
+Additional response "Cultural Marxism does not exist" was available for Marx question.
+
+
+## Data Results
+
+### Introduction
+
+There were 103 survey respondents who responded from 2/2 to 2/3/2016. Response to the poll in Reddit comments was generally positive. There was only one response for "Cultural Marxism does not exist" out of all 103 responses. The question was thrown out and the participant's response was converted to "Strongly Disagree."
+
+### Cleaning
+
+Data was converted to matrix form with the following procedure:
+
+
+1) Views converted to assumed equivalent values $\in[0,1]$: "Strongly Agree" = 1, "Agree" = 2/3, "Disagree" = 1/3, "Strongly Disagree" = 0.
+2) Gender converted: Male = 0, Female = 1.
+3) Age converted to midpoints of ranges. "17 or younger" was assumed to be 15, and "60 or older" was assumed to be 65.
+
+### Frequency of Notable Variables
+
+```{r Load cleaned data, echo=FALSE}
+# Attach data
+
+df=read.csv("C:\\dev\\bayes-present\\explore\\clean_data.csv")
+attach(df)
+```
+
+```{r fig.width=10, fig.height=5, echo=FALSE, warning=FALSE}
+layout( cbind( c(1,1,1,1,1,1,1,1,1), rep(2,9) ) )
+hist(Sex)
+hist(Support)
+```
+
+
+```{r fig.width=10, fig.height=5, echo=FALSE, warning=FALSE}
+layout( cbind( c(1,1,1,1,1,1,1,1,1), rep(2,9) ) )
+hist(Medi)
+hist(Marx)
+```
+
+### Correlation of Variables
+
+```{r Correlation matrix, echo=FALSE, warning=FALSE}
+library(corrplot)
+M <- cor(df)
+corrplot(M, method="circle")
+```
+
+## Classification
+
+### Fitting Number of Clusters
+
+To best fit a number of clusters on response data I used an infinite Gaussian mixture model. Essentially, you can view the distribution of data like a Dirichlet distribution composed of smaller independent multivariate Gaussian distributions. See references for a better explanation. 
+
+
+I used an Expectation-maximization technique to fit my data to this distribution using the scikit-learn Python library. I repeated 10000 trials and found that the algorithm classified my data as beign composed of either two or three groups. The third group (if present) contained at most one member. For that reason, I decided my data was best represented by a mixture model of two independent Gaussian distributions.
+
+### Principal Component Analysis
+
+Having performed multivariate clustering of the data, I then sought to compare these clusters to results of univariate clustering of one factor. 
+
+PCA of the data revealed multiple components that seemed to have identifiable political meaning. The first component had the largest sdev. Here are the weights of the first component (you can see Trump support is correlated with an affirmative response to cultural questions):
+
+```{r pc1, echo=FALSE}
+pcs = prcomp(df, scale=TRUE)
+print(pcs$rotation[,1])
+```
+
+### Bayesian Mixture Modeling
+
+Now, having fit the number of clusters using EM, I used the BayesMix package to cluster the PC1 component data assuming two uncertain independence priors.
+
+
+```{r echo=FALSE, warning=FALSE}
+library(bayesmix)
+
+get_mm=function(vec, p_string) {
+  model = BMMmodel(
+    vec, k = 2, 
+    priors = list(kind = "independence", parameter=p_string),
+    no.empty.classes=TRUE
+  )
+  control = JAGScontrol(variables = c("mu", "tau", "eta", "S"), burn.in = 1000, n.iter = 5000, seed = 12345)
+  
+  z = JAGSrun(vec, model = model, control = control, initialValues=list(S0=4))
+  return(z)
+}
+
+l = capture.output({mm1 = get_mm(pcs$x[,1],"priorsUncertain")})
+```
+
+```{r eval=FALSE}
+library(bayesmix)
+
+get_mm=function(vec, p_string) {
+  model = BMMmodel(
+    vec, k = 2, 
+    priors = list(kind = "independence", parameter=p_string),
+    no.empty.classes=TRUE
+  )
+  control = JAGScontrol(variables = c("mu", "tau", "eta", "S"), burn.in = 1000, n.iter = 5000, seed = 12345)
+  
+  z = JAGSrun(vec, model = model, control = control, initialValues=list(S0=4))
+  return(z)
+}
+
+mm1 = get_mm(pcs$x[,1],"priorsUncertain")
+```
+
+```{r hist with fit, echo=FALSE, fig.height=4}
+plot_hist_with_norms=function(x, mm) {
+  # Assume mm is a mixture model with two components
+  hist(x, freq=FALSE, main="Frequency of PC1 and Cluster Fits")
+  xfit=seq(min(x), max(x), length=100)
+  y1=dnorm(xfit, mean=mean(mm$results[,"mu[1]"]), sd=sqrt(mean(mm$results[,"sigma2[1]"])))
+  y2=dnorm(xfit, mean=mean(mm$results[,"mu[2]"]), sd=sqrt(mean(mm$results[,"sigma2[2]"])))
+  lines(xfit, y1)
+  lines(xfit, y2)
+
+}
+
+plot_hist_with_norms(pcs$x[,1], mm1)
+
+```
+
+
+```{r get people groups, echo=FALSE, warning=FALSE}
+get_average_groups=function(mm, n) {
+  av=c()
+  for(i in 1:n) {
+    av[i] = mean(mm$results[,paste("S[", i, "]", sep="")])
+  }
+  return(av)
+}
+
+av1=get_average_groups(mm1, 103)
+
+```
+
+
+```{r another hist fit of pca, echo=FALSE}
+# Histogram Colored (blue and red)
+hist(pcs$x[round(av1)==1,1], col=rgb(1,0,0,0.5), xlim=c(-6, 2), ylim=c(0, 18), main="Frequency of PC1 values by cluster")
+hist(pcs$x[round(av1)==2,1], col=rgb(0,0,1,0.5), add=T)
+box()
+```
+
+### Monte Carlo Verfication
+
+We can verify our clusters through their differential entropy (determinant of covariance times a dimensional scaling factor.) We will compare this to a Monte Carlo simulation of groups from the same population. Smaller entropy means more correlated data.
+
+
+```{r monte_carlo_fit_test, echo=FALSE}
+# Gets differential entropy of observations which are 
+# assumed to follow multivariate normal
+dif_entropy=function(obs) {
+  k=ncol(obs)
+  return((k/2*(1+log(2*pi))) + (1/2*log(det(cov(obs)))))
+}
+
+random_entropy_draws=function(obs) {
+  ITERATIONS = 5000
+  trial=c()
+  sizes=c()
+  for(it in 1:ITERATIONS) {
+    ent=NA
+    # Make sure we ignore degenerate cases
+    while(!is.numeric(ent) | !is.finite(ent)) {
+      partition=sample(0:1,nrow(obs),replace=T)
+      ent=dif_entropy(df[partition==1,])
+      sizes[it] = sum(partition)
+      trial[it] = ent
+    }
+  }
+  #print(paste(ITERATIONS, "trials"))
+  #print(paste("Average trial size:", mean(sizes)))
+  return(trial)
+}
+
+#mc_draws=random_entropy_draws(df)
+#em_1_draws=random_entropy_draws(df[round(c_2_avg)==1,])
+#em_2_draws=random_entropy_draws(df[round(c_2_avg)==2,])
+draws=random_entropy_draws(df)
+
+```
+
+```{r summary, echo=FALSE}
+print("Monte Carlo Split Draws")
+print(summary(draws))
+  print("99% Conf:")
+  print(quantile(draws, c(.005, .995)))
+    print(paste("Group 1 DE:", dif_entropy(df[round(av1)==1,])))
+    print(paste("Group 2 DE:", dif_entropy(df[round(av1)==2,])))
+
+```
+
+
+## Conclusion
+
+
+Our observed differential entropy values for both clusters are outside the 99% confidence interval for 5000 cases of differential entropy of random group splittings. This implies these groups are both stastically different from the base population.
+
+
+Group 1 is purposed to be a group of general "Republicans" with more diverse beliefs than Trump. Group 2 is purposed to be a group of hardcore Trump supporters with highly correlated beliefs. The second group has a differential entropy value of -0.09 which means they are extrodinarly homogeneous when compared to an average group which has a mean entropy of 2.6660.
+
+
+## References
+
+1. http://blog.echen.me/2012/03/20/infinite-mixture-models-with-nonparametric-bayes-and-the-dirichlet-process/
+2. https://github.com/a-leut/bayes-present
+
+All code and data is availible for download from the second link.
