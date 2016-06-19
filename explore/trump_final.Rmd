@@ -3,7 +3,6 @@ title: "Classification of Trump Supporters with Dirichlet Mixture Models"
 output: 
   pdf_document:
     md_extensions: +startnum
-author: "Alex Leutenegger"
 date: "6/1/2016"
     
 ---
